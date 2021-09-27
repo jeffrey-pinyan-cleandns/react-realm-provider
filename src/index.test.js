@@ -1,7 +1,7 @@
-import { ExampleComponent } from '.'
+import { RealmProvider } from '.'
 
-describe('ExampleComponent', () => {
+describe('RealmProvider', () => {
   it('is truthy', () => {
-    expect(ExampleComponent).toBeTruthy()
+    expect(RealmProvider).toBeTruthy()
   })
 })
