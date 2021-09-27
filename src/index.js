@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import * as Realm from 'realm-web';
 
 export const RealmContext = createContext({});
