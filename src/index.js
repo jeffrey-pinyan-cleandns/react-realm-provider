@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import * as Realm from 'realm-web';
 
 export const RealmContext = createContext({});
@@ -89,4 +89,8 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
             {render ? render(context) : children}
         </RealmContext.Provider>
     );
-}
+};
+
+export const withRealm = (Component) => {
+    return ({ id }) => <RealmProvider id={id} render={(realm) => <Component realm={realm}/>}/>;
+};
