@@ -20,22 +20,22 @@ const App = () => {
 export default App;
 
 const RealmApp = () => {
-    const { loading, login, logout, user, mongo } = useContext(RealmContext);
-    return <RealmBody loading={loading} login={login} logout={logout} user={user} mongo={mongo}/>;
+    const { isLoggedIn, loading, login, logout, user, mongo } = useContext(RealmContext);
+    return <RealmBody {...{isLoggedIn, loading, login, logout, user, mongo}} />;
 };
 
 const RealmReceiver = ({ realm }) => {
-    const { loading, login, logout, user, mongo } = realm;
-    return <RealmBody loading={loading} login={login} logout={logout} user={user} mongo={mongo}/>;
+    const { isLoggedIn, loading, login, logout, user, mongo } = useContext(RealmContext);
+    return <RealmBody {...{isLoggedIn, loading, login, logout, user, mongo}} />;
 };
 
 const WrappedRealmUser = withRealm(RealmReceiver);
 
-const RealmBody = ({ loading, login, logout, user, mongo }) => {
+const RealmBody = ({ isLoggedIn, loading, login, logout, user, mongo }) => {
     const [ recent, setRecent ] = useState([]);
 
     useEffect(() => {
-        if (mongo) {
+        if (isLoggedIn) {
             fetch('https://api.ipify.org/').then((r) => r.text()).then(async (ip) => {
                 await mongo.db('react_realm_provider').collection('sample').insertOne({ realmId: user.id, ts: new Date (), ip: ip.replace(/\d+$/, '0/24') })
                 await mongo.db('react_realm_provider').collection('sample').aggregate([
@@ -44,11 +44,11 @@ const RealmBody = ({ loading, login, logout, user, mongo }) => {
                 ]).then((res) => setRecent(res.map(({ _id, ts }) => ({ ip: _id, ts }))));
             });
         }
-    }, [user, mongo]);
+    }, [isLoggedIn, mongo]);
 
     return (
         <div>
-            {user ? (
+            {isLoggedIn ? (
                 <div><button onClick={() => logout()}>Log Out of Realm</button></div>
             ) : (
                 <div><button onClick={() => login('anonymous')}>Log In to Realm</button></div>
@@ -56,7 +56,7 @@ const RealmBody = ({ loading, login, logout, user, mongo }) => {
             {loading && (
                 <div>Logging in...</div>
             )}
-            {!loading && user && (
+            {isLoggedIn && (
                 <div>
                     <div>Thank you for logging in, user!</div>
                     <div>

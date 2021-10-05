@@ -9,6 +9,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
     const [ customData, setCustomData ] = useState();
     const [ mongo, setMongo ] = useState();
     const [ loading, setLoading ] = useState(remember && app.currentUser);
+    const isLoggedIn = !loading && user;
 
     const register = useCallback(async (...creds) => {
         const registration = await app.emailPasswordAuth.registerUser(...creds);
@@ -76,6 +77,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         user,
         customData,
         mongo,
+        isLoggedIn,
         login,
         logout,
         register,
