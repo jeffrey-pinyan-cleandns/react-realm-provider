@@ -47,10 +47,10 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         const okay = user && await user.refreshCustomData().then(() => true).catch(() => false);
 
         if (okay) {
-            const mongo = user.mongoClient('mongodb-atlas');
+            user.mongo = user.mongoClient('mongodb-atlas');
     
             setUser(user);
-            setMongo(mongo);
+            setMongo(user.mongo);
             setCustomData({ ...user.customData, _id: new Realm.BSON.ObjectId (user.customData._id) });    
         }
         else {
