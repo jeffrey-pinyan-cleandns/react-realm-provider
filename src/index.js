@@ -3,7 +3,7 @@ import * as Realm from 'realm-web';
 
 export const RealmContext = createContext({});
 
-export const RealmProvider = ({ id, render=null, remember=true, children=null, ...opts }) => {
+export const RealmProvider = ({ id, render=null, remember=true, children=null }) => {
     const app = useRef(new Realm.App ({ id })).current;
     const [ user, setUser ] = useState();
     const [ customData, setCustomData ] = useState();
@@ -11,35 +11,32 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
     const [ loading, setLoading ] = useState(remember && app.currentUser);
     const isLoggedIn = !loading && user;
 
-    const register = useCallback(async (...creds) => {
-        const registration = await app.emailPasswordAuth.registerUser(...creds);
-        if (opts.onRegister) opts.onRegister(registration);
+    const register = useCallback(async (email, password, onRegister=null) => {
+        const registration = await app.emailPasswordAuth.registerUser(email, password);
+        if (onRegister) await onRegister(registration);
         return registration;
     }, []);
 
-    const resetPassword = useCallback(async (token, tokenId, password) => {
+    const resetPassword = useCallback(async (token, tokenId, password, onResetPassword=null) => {
         const reset = await app.emailPasswordAuth.resetPassword(token, tokenId, password);
-        if (opts.onResetPassword) opts.onResetPassword(reset);
+        if (onResetPassword) await onResetPassword(reset);
         return reset;
     })
 
-    const confirm = useCallback(async (token, tokenId) => {
+    const confirm = useCallback(async (token, tokenId, onConfirm=null) => {
         const confirmation = await app.emailPasswordAuth.confirmUser(token, tokenId);
-        if (opts.onConfirm) opts.onConfirm(confirmation);
+        if (onConfirm) await onConfirm(confirmation);
         return confirmation;
     }, []);
 
     const login = useCallback(async (how, ...creds) => {
+        const onLogin = ('function' === typeof creds[creds.length-1]) && creds.pop();
         const user = await app.logIn(Realm.Credentials[how](...creds));
 
-        if (opts.onLogin) await opts.onLogin(user);
+        if (onLogin) await onLogin(user);
         await user.refreshCustomData();
         updateUser(user);
         return user;
-    }, []);
-
-    const linkUser = useCallback(async (user, email, password) => {
-        return await user.linkCredentials(email, password);
     }, []);
 
     const updateUser = useCallback(async (user) => {
@@ -66,14 +63,21 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         remember && app.currentUser && updateUser(app.currentUser);
     }, []);
 
-    const logout = useCallback(async () => {
-        app.currentUser && app.currentUser.logOut().then(() => {
+    const logout = useCallback(async (onLogout=null) => {
+        return app.currentUser && app.currentUser.logOut().then(() => {
             setUser();
-            if (opts.onLogout) opts.onLogout();
+            return onLogout && onLogout();
         });
     }, []);
 
     const callFunction = useCallback((func, ...args) => user.functions[func](...args), [user]);
+
+    const refreshCustomData = useCallback(async () => {
+        if (user) {
+            await user.refreshCustomData();
+            setCustomData({ ...user.customData, _id: new Realm.BSON.ObjectId (user.customData._id) });
+        }
+    }, [user]);
 
     const context = {
         app,
@@ -85,10 +89,10 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         login,
         logout,
         register,
-        linkUser,
         confirm,
         resetPassword,
         callFunction,
+        refreshCustomData,
     };
 
     return (
