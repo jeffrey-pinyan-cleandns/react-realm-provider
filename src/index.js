@@ -38,6 +38,10 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         return user;
     }, []);
 
+    const linkUser = useCallback(async (user, email, password) => {
+        return await user.linkCredentials(email, password);
+    }, []);
+
     const updateUser = useCallback(async (user) => {
         setLoading(true);
         const okay = user && await user.refreshCustomData().then(() => true).catch(() => false);
@@ -81,6 +85,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null, .
         login,
         logout,
         register,
+        linkUser,
         confirm,
         resetPassword,
         callFunction,
