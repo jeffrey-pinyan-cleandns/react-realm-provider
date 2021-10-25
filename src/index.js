@@ -9,6 +9,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     const [ customData, setCustomData ] = useState();
     const [ mongo, setMongo ] = useState();
     const [ loading, setLoading ] = useState(remember && app.currentUser);
+    const [ updating, setUpdating ] = useState(remember && app.currentUser);
     const isLoggedIn = !loading && user;
 
     const register = useCallback(async (email, password, onRegister=null) => {
@@ -30,6 +31,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     }, []);
 
     const login = useCallback(async (how, ...creds) => {
+        setLoading(true);
         const onLogin = ('function' === typeof creds[creds.length-1]) && creds.pop();
         const user = await app.logIn(Realm.Credentials[how](...creds));
 
@@ -40,7 +42,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     }, []);
 
     const updateUser = useCallback(async (user) => {
-        setLoading(true);
+        setUpdating(true);
         const okay = user && await user.refreshCustomData().then(() => true).catch(() => false);
 
         if (okay) {
@@ -57,6 +59,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         }
 
         setLoading(false);
+        setUpdating(false);
     }, []);
 
     useEffect(() => {
@@ -82,6 +85,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     const context = {
         app,
         loading,
+        updating,
         user,
         customData,
         mongo,
