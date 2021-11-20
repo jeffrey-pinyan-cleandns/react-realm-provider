@@ -1,16 +1,13 @@
-import React, { createContext, useCallback, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useMemo, useRef, useState } from 'react';
 import * as Realm from 'realm-web';
 
 export const RealmContext = createContext({});
 
 export const RealmProvider = ({ id, render=null, remember=true, children=null }) => {
     const app = useRef(new Realm.App ({ id })).current;
-    const [ user, setUser ] = useState();
-    const [ customData, setCustomData ] = useState();
-    const [ mongo, setMongo ] = useState();
-    const [ loading, setLoading ] = useState(remember && app.currentUser);
-    const [ updating, setUpdating ] = useState(remember && app.currentUser);
-    const isLoggedIn = !loading && user;
+    const [ user, setUser ] = useState(remember && app.currentUser);
+    const [ loading, setLoading ] = useState(Boolean(user));
+    const mongo = useMemo(() => user && user.mongoClient('mongodb-atlas'), [user]);
 
     const register = useCallback(async (email, password, onRegister=null) => {
         const registration = await app.emailPasswordAuth.registerUser(email, password);
@@ -22,7 +19,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         const reset = await app.emailPasswordAuth.resetPassword(token, tokenId, password);
         if (onResetPassword) await onResetPassword(reset);
         return reset;
-    })
+    }, []);
 
     const confirm = useCallback(async (token, tokenId, onConfirm=null) => {
         const confirmation = await app.emailPasswordAuth.confirmUser(token, tokenId);
@@ -33,37 +30,24 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     const login = useCallback(async (how, ...creds) => {
         setLoading(true);
         const onLogin = ('function' === typeof creds[creds.length-1]) && creds.pop();
-        const user = await app.logIn(Realm.Credentials[how](...creds));
+        const user = await app.logIn(Realm.Credentials[how](...creds)).catch((error) => {
+            setLoading(false);
+            throw error;
+        });
 
-        if (onLogin) await onLogin(user);
-        await user.refreshCustomData();
-        updateUser(user);
-        return user;
-    }, []);
+        if (onLogin) await onLogin(user).catch((error) => {
+            setLoading(false);
+            throw error;
+        });
 
-    const updateUser = useCallback(async (user) => {
-        setUpdating(true);
-        const okay = user && await user.refreshCustomData().then(() => true).catch(() => false);
-
-        if (okay) {
-            user.mongo = user.mongoClient('mongodb-atlas');
-    
-            setUser(user);
-            setMongo(user.mongo);
-            setCustomData({ ...user.customData, _id: new Realm.BSON.ObjectId (user.customData._id) });    
-        }
-        else {
-            setUser();
-            setMongo();
-            setCustomData();
-        }
-
-        setLoading(false);
-        setUpdating(false);
-    }, []);
-
-    useEffect(() => {
-        remember && app.currentUser && updateUser(app.currentUser);
+        return await user.refreshCustomData().then(() => {
+           setUser(user);
+           setLoading(false);
+           return user;
+        }).catch((error) => {
+            setLoading(false);
+            throw error;
+        });
     }, []);
 
     const logout = useCallback(async (onLogout=null) => {
@@ -75,28 +59,20 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
 
     const callFunction = useCallback((func, ...args) => user.functions[func](...args), [user]);
 
-    const refreshCustomData = useCallback(async () => {
-        if (user) {
-            await user.refreshCustomData();
-            setCustomData({ ...user.customData, _id: new Realm.BSON.ObjectId (user.customData._id) });
-        }
-    }, [user]);
-
     const context = {
         app,
         loading,
-        updating,
         user,
-        customData,
+        customData: user && user.customData,
         mongo,
-        isLoggedIn,
+        isLoggedIn: Boolean(user),
         login,
         logout,
         register,
         confirm,
         resetPassword,
         callFunction,
-        refreshCustomData,
+        refreshCustomData: user && user.refreshCustomData,
     };
 
     return (
