@@ -6,6 +6,7 @@ export const RealmContext = createContext({});
 export const RealmProvider = ({ id, render=null, remember=true, children=null }) => {
     const app = useRef(new Realm.App ({ id })).current;
     const [ user, setUser ] = useState(remember && app.currentUser);
+    const [ customData, setCustomData ] = useState(user && user.customData);
     const [ loading, setLoading ] = useState(Boolean(user));
     const mongo = useMemo(() => user && user.mongoClient('mongodb-atlas'), [user]);
 
@@ -41,9 +42,10 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         });
 
         return await user.refreshCustomData().then(() => {
-           setUser(user);
-           setLoading(false);
-           return user;
+            setCustomData(user.customData);
+            setUser(user);
+            setLoading(false);
+            return user;
         }).catch((error) => {
             setLoading(false);
             throw error;
@@ -57,13 +59,15 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         });
     }, []);
 
+    const refreshCustomData = useCallback(() => user.refreshCustomData(), [user]);
+
     const callFunction = useCallback((func, ...args) => user.functions[func](...args), [user]);
 
     const context = {
         app,
         loading,
         user,
-        customData: user && user.customData,
+        customData,
         mongo,
         isLoggedIn: Boolean(user),
         login,
@@ -72,7 +76,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         confirm,
         resetPassword,
         callFunction,
-        refreshCustomData: user && user.refreshCustomData,
+        refreshCustomData,
     };
 
     return (
