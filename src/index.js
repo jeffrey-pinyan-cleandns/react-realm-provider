@@ -59,7 +59,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         });
     }, []);
 
-    const refreshCustomData = useCallback(() => user.refreshCustomData(), [user]);
+    const refreshCustomData = useCallback(() => user.refreshCustomData().then(() => setCustomData(user.customData)), [user]);
 
     const callFunction = useCallback((func, ...args) => user.functions[func](...args), [user]);
 
