@@ -1,6 +1,7 @@
 
 # See https://help.github.com/ignore-files/ for more about ignoring files.
 
+# np --no-2fa --public
 # dependencies
 node_modules
 
