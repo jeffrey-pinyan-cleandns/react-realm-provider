@@ -69,7 +69,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         user,
         customData,
         mongo,
-        isLoggedIn: Boolean(user),
+        isLoggedIn: Boolean(user) && user.isLoggedIn,
         login,
         logout,
         register,
