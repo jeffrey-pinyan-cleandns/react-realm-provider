@@ -10,6 +10,11 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
     const [ loading, setLoading ] = useState(Boolean(user));
     const mongo = useMemo(() => user && user.mongoClient('mongodb-atlas'), [user]);
 
+    const linkUser = useCallback(async (user, how, ...creds) => {
+        const linkedCreds = Realm.Credentials[how](...creds);
+        return user.linkCredentials(linkedCreds);
+    }, []);
+
     const register = useCallback(async (email, password, onRegister=null) => {
         const registration = await app.emailPasswordAuth.registerUser(email, password);
         if (onRegister) await onRegister(registration);
@@ -73,6 +78,7 @@ export const RealmProvider = ({ id, render=null, remember=true, children=null })
         login,
         logout,
         register,
+        linkUser,
         confirm,
         resetPassword,
         callFunction,
